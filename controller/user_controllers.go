@@ -5,6 +5,7 @@ import (
 	"go-fiber-gorm/database"
 	"go-fiber-gorm/model/entity"
 	"go-fiber-gorm/model/request"
+	"go-fiber-gorm/model/response"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
@@ -168,11 +169,12 @@ func GetUserId(c *fiber.Ctx)error{
 		})
 	}
 
-	userResponse := request.UserCreateRequest{
+	userResponse := response.User{
 		Name: user.Name,
 		Address: user.Address,
 		Phone: user.Phone,
 		Email: user.Email,
+		Password: user.Password,
 	}
 
 	return c.Status(200).JSON(fiber.Map{

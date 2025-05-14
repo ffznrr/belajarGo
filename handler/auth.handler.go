@@ -6,6 +6,8 @@ import (
 	"go-fiber-gorm/model/entity"
 	"go-fiber-gorm/model/request"
 	"go-fiber-gorm/model/response"
+	"go-fiber-gorm/utils"
+	"log"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
@@ -13,9 +15,10 @@ import (
 
 func Login(ctx *fiber.Ctx)error {
 	userResponse := new(request.UserLoginRequest)
+
 	var user entity.User
 	errLogin := ctx.BodyParser(userResponse)
-	fmt.Println(userResponse, "ini user response")
+	
 
 	if errLogin != nil {
 		return ctx.Status(400).JSON(fiber.Map{
@@ -24,20 +27,23 @@ func Login(ctx *fiber.Ctx)error {
 	}
 
 	checkName := database.DB.First(&user, "Name = ?",userResponse.Name ).Error
-	fmt.Println(user, "ini userr")
+	
 
 	if checkName != nil {
 		return ctx.Status(fiber.ErrNotFound.Code).JSON(fiber.Map{
 			"message": "Username/Password Salah",
 		})
 	}
-	fmt.Println(user,"<-- -->", userResponse.Password)
 
-	if user.Password != userResponse.Password {
-		return ctx.Status(fiber.ErrNotFound.Code).JSON(fiber.Map{
-			"message": "Username/Password Salah",
+	// validasi password
+
+	isValid :=  utils.CheckPasswordHash(userResponse.Password, user.Password)
+	if !isValid {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"message": "Wrong Credential",
 		})
 	}
+
 
 	return ctx.Status(200).JSON(fiber.Map{
 		"message": "Login Success",
@@ -68,9 +74,8 @@ func Register(ctx *fiber.Ctx)error{
 		})
 	}
 
-	test := &request.UserCreateRequest{}
-	fmt.Println(test)
 
+	
 
 	newUser := entity.User{
 		Name: user.Name,
@@ -79,7 +84,16 @@ func Register(ctx *fiber.Ctx)error{
 		Address: user.Address,
 		Phone: user.Phone,
 	}
-	
+
+	hashedPass, err := utils.HashingPassword(user.Password)
+	if err != nil {
+		log.Println(err)
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": "internal server error",
+		})
+	}
+
+	newUser.Password = hashedPass
 
 	errCreateUser := database.DB.Create(&newUser).Error
 	if errCreateUser != nil {

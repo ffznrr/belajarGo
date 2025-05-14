@@ -16,7 +16,6 @@ func Router(app *fiber.App) {
 	app.Post("/login", handler.Login)
 
 
-
 app.Get("/main", controller.UserHandlerCreate )
 app.Use(middleware.UserMiddleware)
 app.Get("/user", controller.GetUser)
